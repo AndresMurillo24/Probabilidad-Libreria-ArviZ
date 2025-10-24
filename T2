@@ -1,0 +1,93 @@
+# probabilidad_densidad_arviz.py
+# pip install sympy arviz matplotlib numpy
+
+import sympy as sp
+import numpy as np
+import arviz as az
+import matplotlib.pyplot as plt
+
+# ================================
+# 1️⃣ Definición simbólica
+# ================================
+x = sp.Symbol('x', real=True, nonnegative=True)
+K = sp.Symbol('K', real=True, positive=True)
+
+# Definimos la función de densidad: f(x) = Kx^2, para 0 ≤ x ≤ 6
+f = K * x**2
+
+# ================================
+# 2️⃣ Calcular K (condición de normalización)
+# ================================
+int_normal = sp.integrate(f, (x, 0, 6))
+K_val = sp.solve(sp.Eq(int_normal, 1), K)[0]
+print(f"Constante de normalización K = {K_val}")
+
+# Sustituimos el valor de K en la función f(x)
+f_x = f.subs(K, K_val)
+print(f"\nFunción de densidad: f(x) = {sp.simplify(f_x)} para 0 ≤ x ≤ 6")
+
+# ================================
+# 3️⃣ Función acumulativa F(x)
+# ================================
+F_x = sp.integrate(f_x, (x, 0, x))
+F_x = sp.simplify(F_x)
+print(f"\nFunción acumulativa (0 ≤ x ≤ 6): F(x) = {F_x}")
+
+# Definimos F(x) por tramos
+F_piecewise = sp.Piecewise(
+    (0, x <= 0),
+    (F_x, (x > 0) & (x < 6)),
+    (1, x >= 6)
+)
+
+# ================================
+# 4️⃣ Probabilidad P(1 < X < 2)
+# ================================
+P_1_2 = sp.integrate(f_x, (x, 1, 2))
+P_1_2_val = float(P_1_2.evalf())
+
+# Verificación con F(x)
+P_1_2_F = float(F_x.subs(x, 2) - F_x.subs(x, 1))
+print(f"\nP(1 < X < 2) = {P_1_2_val:.5f}")
+print(f"Comprobación con F(x): {P_1_2_F:.5f}")
+
+# ================================
+# 5️⃣ Valor esperado y varianza
+# ================================
+E_X = sp.integrate(x * f_x, (x, 0, 6))
+E_X2 = sp.integrate(x**2 * f_x, (x, 0, 6))
+Var_X = sp.simplify(E_X2 - E_X**2)
+
+E_X_val = float(E_X.evalf())
+Var_X_val = float(Var_X.evalf())
+
+print(f"\nValor esperado E[X] = {E_X_val:.5f}")
+print(f"Varianza Var(X) = {Var_X_val:.5f}")
+
+# ================================
+# 6️⃣ Análisis con ArviZ
+# ================================
+# Usamos ArviZ para resumir los valores calculados
+idata = az.from_dict(
+    posterior={
+        "K": [float(K_val)],
+        "P_1<X<2": [P_1_2_val],
+        "E[X]": [E_X_val],
+        "Var(X)": [Var_X_val]
+    }
+)
+
+print("\n📊 Resumen de análisis con ArviZ:")
+print(az.summary(idata))
+
+# ================================
+# 7️⃣ Visualización con ArviZ
+# ================================
+# Generamos una versión numérica de f(x) y F(x)
+f_num = sp.lambdify(x, f_x, 'numpy')
+F_num = sp.lambdify(x, F_x, 'numpy')
+xs = np.linspace(0, 6, 300)
+
+# Creamos datos simulados para graficar distribuciones
+samples = f_num(xs)
+idata_gra_
