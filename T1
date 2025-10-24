@@ -1,0 +1,85 @@
+# soluciones_probabilidad_ejercicios_arviz.py
+# Requiere: pip install arviz matplotlib h2o
+
+import math
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import arviz as az
+from math import comb
+
+# ==============================
+# EJERCICIO 1
+# ==============================
+
+E, S, I = 8, 3, 9
+N = E + S + I  # Total de 20 estudiantes
+
+def ejercicio1():
+    resultados = []
+
+    # --- SIN reemplazo ---
+    denom_sin = comb(N, 3)
+    p_3E_sin = comb(E, 3) / denom_sin if E >= 3 else 0.0
+    p_3S_sin = comb(S, 3) / denom_sin if S >= 3 else 0.0
+    p_2E_1S_sin = (comb(E, 2) * comb(S, 1)) / denom_sin
+    p_al_menos_1S_sin = 1 - comb(N - S, 3) / denom_sin
+    p_1cada_sin = (comb(E,1) * comb(S,1) * comb(I,1)) / denom_sin
+    p_orden_ESI_sin = (E / N) * (S / (N - 1)) * (I / (N - 2))
+
+    resultados.append(("SIN reemplazo", {
+        "Los 3 sean Electrónica": p_3E_sin,
+        "Los 3 sean Sistemas": p_3S_sin,
+        "2 Electrónica y 1 Sistemas": p_2E_1S_sin,
+        "Al menos 1 Sistemas": p_al_menos_1S_sin,
+        "1 de cada carrera": p_1cada_sin,
+        "En orden E,S,I": p_orden_ESI_sin
+    }))
+
+    # --- CON reemplazo ---
+    pE, pS, pI = E / N, S / N, I / N
+    p_3E_con = pE ** 3
+    p_3S_con = pS ** 3
+    p_2E_1S_con = comb(3,2) * (pE ** 2) * pS
+    p_al_menos_1S_con = 1 - (1 - pS) ** 3
+    p_1cada_con = math.factorial(3) * pE * pS * pI
+    p_orden_ESI_con = pE * pS * pI
+
+    resultados.append(("CON reemplazo", {
+        "Los 3 sean Electrónica": p_3E_con,
+        "Los 3 sean Sistemas": p_3S_con,
+        "2 Electrónica y 1 Sistemas": p_2E_1S_con,
+        "Al menos 1 Sistemas": p_al_menos_1S_con,
+        "1 de cada carrera": p_1cada_con,
+        "En orden E,S,I": p_orden_ESI_con
+    }))
+    return resultados
+
+res1 = ejercicio1()
+
+# Convertir resultados a DataFrame
+rows = []
+for tipo, dic in res1:
+    for evento, p in dic.items():
+        rows.append({"Tipo": tipo, "Evento": evento, "Probabilidad": p})
+df1 = pd.DataFrame(rows)
+
+# Convertir el DataFrame a InferenceData con ArviZ
+idata1 = az.from_pandas(df1)
+
+print("\n=== EJERCICIO 1: Selección de estudiantes (usando ArviZ) ===")
+print(df1.to_string(index=False, formatters={"Probabilidad": "{:.6f}".format}))
+print("\n📊 Resumen de ArviZ:")
+print(az.summary(idata1, var_names=["Probabilidad"]))
+
+# ==============================
+# EJERCICIO 2
+# ==============================
+def ejercicio2():
+    n_ing, n_ingl, n_fis = 4, 6, 2
+    formas_a = math.factorial(3) * math.factorial(n_ing) * math.factorial(n_ingl) * math.factorial(n_fis)
+    formas_b = math.factorial(9) * math.factorial(4)
+    return formas_a, formas_b
+
+formas2_a, formas2_b = ejercicio2()
+datos2 = {"Caso": ["Cada asignatura junta", "]()
